@@ -1,56 +1,43 @@
 import { NextResponse } from 'next/server';
-import { verifyJWT } from './lib/auth-utils';
+import { jwtVerify, SignJWT } from 'jose';
 
-export function middleware(request) {
-  // Get token from cookie
-  const token = request.cookies.get('admin_token')?.value;
-  
-  // Define protected paths
-  const isProtectedPath = request.nextUrl.pathname.startsWith('/admin') || 
-                         request.nextUrl.pathname === '/Home';
-  
-  // Login path - redirect to dashboard if already logged in
-  if (request.nextUrl.pathname === '/login') {
-    if (token) {
-      // Verify token
-      const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
-      const payload = verifyJWT(token, JWT_SECRET);
-      
-      if (payload) {
-        return NextResponse.redirect(new URL('/Home', request.url));
-      }
-    }
-    return NextResponse.next();
-  }
-  
-  // Protected paths - verify token
-  if (isProtectedPath) {
+export async function middleware(request) {
+  try {
+    // Get token from Authorization header or cookies
+    const token = request.cookies.get('token')?.value || 
+                  request.headers.get('authorization')?.split(' ')[1];
+    
     if (!token) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
     
-    // Verify token
-    const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
-    const payload = verifyJWT(token, JWT_SECRET);
+    // Prepare the secret key
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     
-    if (!payload) {
-      // Clear invalid token
-      const response = NextResponse.redirect(new URL('/login', request.url));
-      response.cookies.set({
-        name: 'admin_token',
-        value: '',
-        httpOnly: true,
-        maxAge: 0,
-        path: '/',
-      });
-      return response;
-    }
+    // Verify the token
+    const { payload } = await jwtVerify(token, secret);
+    
+    // Continue to the requested page
+    return NextResponse.next();
+  } catch (error) {
+    // Redirect to login on verification failure
+    return NextResponse.redirect(new URL('/login', request.url));
   }
-  
-  return NextResponse.next();
 }
 
-// Only run middleware on specific paths
+// Specify which paths to run the middleware on
 export const config = {
-  matcher: ['/login', '/Home', '/admin/:path*'],
+  matcher: ['/protected/:path*', '/api/protected/:path*'],
 };
+
+export async function createToken(payload) {
+  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+  
+  const token = await new SignJWT(payload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('2h')  // Token expires in 2 hours
+    .sign(secret);
+  
+  return token;
+}

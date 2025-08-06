@@ -1,3 +1,5 @@
+import jwt from 'jsonwebtoken';
+
 const crypto = require('crypto');
 
 /**
@@ -102,6 +104,12 @@ const verifyJWT = (token, secret) => {
     return null;
   }
 };
+
+export default function handler(req, res) {
+  // jwt works fine here since this isn't an Edge function
+  const token = jwt.sign({ userId: 123 }, process.env.JWT_SECRET);
+  res.status(200).json({ token });
+}
 
 module.exports = {
   generateSalt,
