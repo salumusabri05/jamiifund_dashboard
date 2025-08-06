@@ -11,14 +11,14 @@ import { useAuth } from '../context/AuthContext';
  * Redirects unauthenticated users to login page
  */
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { admin, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !admin) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [admin, loading, router]);
 
   if (loading) {
     return (
@@ -28,7 +28,7 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  return user ? <>{children}</> : null;
+  return admin ? <>{children}</> : null;
 };
 
 export default ProtectedRoute;

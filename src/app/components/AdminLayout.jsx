@@ -16,7 +16,7 @@ import ProtectedRoute from '../../components/ProtectedRoute';
  */
 const AdminLayout = ({ children, currentPage }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { adminData, signOut } = useAuth();
+  const { admin, signOut } = useAuth();  // Changed from adminData to admin for consistency
   
   const menuItems = [
     { icon: <FiHome />, label: 'Dashboard', path: '/Home' },
@@ -105,7 +105,7 @@ const AdminLayout = ({ children, currentPage }) => {
           </div>
         </motion.div>
 
-        {/* Main Content */}
+        {/* Main Content Wrapper */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
           <header className="bg-white shadow-md p-4 flex justify-between items-center">
@@ -119,15 +119,15 @@ const AdminLayout = ({ children, currentPage }) => {
             </motion.h1>
             
             {/* Admin Profile */}
-            {adminData && (
+            {admin && (
               <div className="flex items-center">
                 <div className="text-right mr-4">
-                  <p className="text-sm font-medium text-gray-900">{adminData.full_name}</p>
-                  <p className="text-xs text-gray-500">{adminData.role}</p>
+                  <p className="text-sm font-medium text-gray-900">{admin.full_name}</p>
+                  <p className="text-xs text-gray-500">{admin.role}</p>
                 </div>
                 <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                  {adminData.avatar_url ? (
-                    <img src={adminData.avatar_url} alt="Profile" className="h-10 w-10 rounded-full" />
+                  {admin.avatar_url ? (
+                    <img src={admin.avatar_url} alt="Profile" className="h-10 w-10 rounded-full" />
                   ) : (
                     <FiUser className="text-purple-600" />
                   )}
@@ -136,7 +136,7 @@ const AdminLayout = ({ children, currentPage }) => {
             )}
           </header>
           
-          {/* Page Content */}
+          {/* Content Area */}
           <main className="flex-1 overflow-y-auto p-6 bg-purple-50">
             {children}
           </main>

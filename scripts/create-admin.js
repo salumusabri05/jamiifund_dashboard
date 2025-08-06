@@ -1,5 +1,5 @@
 //:\Users\Administrator\Desktop\JAMIIFUND DASHBOARD\dashboard\scripts\create-admin.js
-require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
 const { createClient } = require('@supabase/supabase-js');
 const { generateSalt, hashPassword } = require('../src/lib/auth-utils');
 
