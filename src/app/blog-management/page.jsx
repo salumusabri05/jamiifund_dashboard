@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import AdminLayout from '../components/AdminLayout';
 import { useAuth } from '../../context/AuthContext';
-import supabase from '../../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 import { FiPlus, FiEdit2, FiTrash2, FiEye, FiSave, FiX } from 'react-icons/fi';
 import dynamic from 'next/dynamic';
 import 'react-quill/dist/quill.snow.css'
@@ -58,18 +58,39 @@ const BlogManagementPage = () => {
     fetchBlogPosts();
   }, []);
 
+  const verifyConnection = async () => {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      console.log('Supabase connection verified:', !!data);
+      return true;
+    } catch (error) {
+      console.error('Supabase connection error:', error);
+      setError('Failed to connect to the database. Please check your configuration.');
+      return false;
+    }
+  };
+
   const fetchBlogPosts = async () => {
     try {
       setLoading(true);
+      console.log('Fetching blog posts...');
+      
+      const connected = await verifyConnection();
+      if (!connected) return;
+      
       const { data, error } = await supabase
         .from('blog_posts')
         .select('*')
         .order('created_at', { ascending: false });
-      
+    
+      console.log('Fetch response:', { data, error });
+    
       if (error) throw error;
       setPosts(data || []);
     } catch (error) {
       console.error('Error fetching blog posts:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
