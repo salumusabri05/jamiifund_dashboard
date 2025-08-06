@@ -26,30 +26,38 @@ const ManageCampaignsPage = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    category: '',
     goal_amount: '',
     end_date: '',
-    status: ''
+    status: '',
+    is_featured: false
   });
 
   useEffect(() => {
     fetchCampaigns();
   }, [statusFilter]);
 
+  // Modify the fetchCampaigns function to ensure all campaigns are retrieved
   const fetchCampaigns = async () => {
     try {
       setLoading(true);
       let query = supabase
         .from('campaigns')
-        .select('*, user:users(full_name, email)')
+        .select('*')
         .order('created_at', { ascending: false });
       
+      // Only apply status filter when not "all"
       if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+        query = query.eq('is_featured', statusFilter === 'true');
       }
       
       const { data, error } = await query;
       
       if (error) throw error;
+      
+      // Log the number of campaigns retrieved for debugging
+      console.log(`Retrieved ${data?.length || 0} campaigns`);
+      
       setCampaigns(data || []);
     } catch (error) {
       console.error('Error fetching campaigns:', error);
@@ -62,7 +70,7 @@ const ManageCampaignsPage = () => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === 'goal_amount' ? parseFloat(value) || '' : value
+      [name]: name === 'goal_amount' ? parseInt(value, 10) || '' : value
     });
   };
 
@@ -71,9 +79,11 @@ const ManageCampaignsPage = () => {
     setFormData({
       title: campaign.title || '',
       description: campaign.description || '',
+      category: campaign.category || '',
       goal_amount: campaign.goal_amount || '',
       end_date: campaign.end_date ? campaign.end_date.split('T')[0] : '',
-      status: campaign.status || ''
+      status: campaign.status || '',
+      is_featured: campaign.is_featured || false
     });
     setEditMode(true);
   };
@@ -86,9 +96,11 @@ const ManageCampaignsPage = () => {
         .update({
           title: formData.title,
           description: formData.description,
+          category: formData.category,
           goal_amount: formData.goal_amount,
           end_date: formData.end_date,
           status: formData.status,
+          is_featured: formData.is_featured,
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedCampaign.id);
@@ -121,10 +133,15 @@ const ManageCampaignsPage = () => {
     }
   };
 
-  const filteredCampaigns = campaigns.filter(campaign => 
-    campaign.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    campaign.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Update the filtering logic to be more inclusive
+  const filteredCampaigns = searchTerm.trim() === '' 
+    ? campaigns 
+    : campaigns.filter(campaign => 
+        campaign.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        campaign.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        campaign.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        campaign.user?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
 
   // Animation variants
   const containerVariants = {
@@ -169,11 +186,9 @@ const ManageCampaignsPage = () => {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <option value="all">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-                <option value="completed">Completed</option>
+                <option value="all">All Campaigns</option>
+                <option value="true">Featured</option>
+                <option value="false">Not Featured</option>
               </select>
             </div>
           </div>
@@ -190,7 +205,7 @@ const ManageCampaignsPage = () => {
             initial="hidden"
             animate="visible"
           >
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-purple-50">
                   <tr>
@@ -278,6 +293,9 @@ const ManageCampaignsPage = () => {
                 </tbody>
               </table>
             </div>
+            <div className="px-6 py-3 bg-purple-50 text-sm text-purple-800">
+              Showing {filteredCampaigns.length} of {campaigns.length} campaigns
+            </div>
           </motion.div>
         )}
       </div>
@@ -319,12 +337,28 @@ const ManageCampaignsPage = () => {
                   <p className="font-bold text-purple-800">${selectedCampaign.goal_amount?.toLocaleString()}</p>
                 </div>
                 <div className="bg-purple-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500">Current Amount</p>
+                  <p className="font-bold text-purple-800">${selectedCampaign.current_amount?.toLocaleString() || 0}</p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
                   <p className="text-sm text-gray-500">Campaign Duration</p>
                   <p className="font-bold text-purple-800">
                     {selectedCampaign.end_date ? 
                       `Until ${new Date(selectedCampaign.end_date).toLocaleDateString()}` : 
                       'Ongoing'}
                   </p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500">Category</p>
+                  <p className="font-bold text-purple-800">{selectedCampaign.category || 'Uncategorized'}</p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500">Donor Count</p>
+                  <p className="font-bold text-purple-800">{selectedCampaign.donor_count || 0}</p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500">Featured</p>
+                  <p className="font-bold text-purple-800">{selectedCampaign.is_featured ? 'Yes' : 'No'}</p>
                 </div>
               </div>
               <div className="border-t border-gray-100 pt-4 flex justify-end space-x-3">
@@ -396,38 +430,57 @@ const ManageCampaignsPage = () => {
                     required
                   ></textarea>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="goal_amount">
-                      Goal Amount ($)
-                    </label>
-                    <input
-                      type="number"
-                      id="goal_amount"
-                      name="goal_amount"
-                      min="0"
-                      step="0.01"
-                      className="w-full border-2 border-purple-200 rounded-md p-2"
-                      value={formData.goal_amount}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="end_date">
-                      End Date
-                    </label>
-                    <input
-                      type="date"
-                      id="end_date"
-                      name="end_date"
-                      className="w-full border-2 border-purple-200 rounded-md p-2"
-                      value={formData.end_date}
-                      onChange={handleInputChange}
-                    />
-                  </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="category">
+                    Category
+                  </label>
+                  <select
+                    id="category"
+                    name="category"
+                    className="w-full border-2 border-purple-200 rounded-md p-2"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Select a category</option>
+                    <option value="Education">Education</option>
+                    <option value="Medical">Medical</option>
+                    <option value="Emergency">Emergency</option>
+                    <option value="Community">Community</option>
+                    <option value="Business">Business</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
-                <div className="mb-6">
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="goal_amount">
+                    Goal Amount ($)
+                  </label>
+                  <input
+                    type="number"
+                    id="goal_amount"
+                    name="goal_amount"
+                    min="0"
+                    step="0.01"
+                    className="w-full border-2 border-purple-200 rounded-md p-2"
+                    value={formData.goal_amount}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="end_date">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    id="end_date"
+                    name="end_date"
+                    className="w-full border-2 border-purple-200 rounded-md p-2"
+                    value={formData.end_date}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="mb-4">
                   <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="status">
                     Status
                   </label>
@@ -444,6 +497,19 @@ const ManageCampaignsPage = () => {
                     <option value="rejected">Rejected</option>
                     <option value="completed">Completed</option>
                   </select>
+                </div>
+                <div className="mb-4 flex items-center">
+                  <input
+                    type="checkbox"
+                    id="is_featured"
+                    name="is_featured"
+                    className="h-4 w-4 text-purple-600 border-2 border-purple-200 rounded mr-2"
+                    checked={formData.is_featured}
+                    onChange={(e) => setFormData({...formData, is_featured: e.target.checked})}
+                  />
+                  <label className="text-gray-700 text-sm font-bold" htmlFor="is_featured">
+                    Feature this campaign on homepage
+                  </label>
                 </div>
                 <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
                   <motion.button
