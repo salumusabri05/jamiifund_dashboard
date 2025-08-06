@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiUsers, FiFlag, FiEdit, FiBarChart2, FiDollarSign } from 'react-icons/fi';
 import Link from 'next/link';
 import AdminLayout from '../components/AdminLayout';
 import { useAuth } from '../../context/AuthContext';
@@ -27,50 +26,80 @@ const HomePage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState([]);
+  const [error, setError] = useState(null);
 
   // Fetch dashboard statistics
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
+        setError(null);
         
-        // These are example queries - adjust according to your actual database schema
-        const [usersResponse, campaignsResponse, fundsResponse, transactionsResponse, activitiesResponse] = 
-          await Promise.allSettled([
-            supabase.from('users').select('id', { count: 'exact' }),
-            supabase.from('campaigns').select('id', { count: 'exact' }),
-            supabase.from('transactions').select('amount').eq('status', 'completed'),
-            supabase.from('transactions').select('id', { count: 'exact' }),
-            supabase.from('activities').select('*').order('created_at', { ascending: false }).limit(5)
-          ]);
-
-        // Update stats with results
-        setStats({
-          users: usersResponse.status === 'fulfilled' ? usersResponse.value.count || 0 : 0,
-          campaigns: campaignsResponse.status === 'fulfilled' ? campaignsResponse.value.count || 0 : 0,
-          funds: fundsResponse.status === 'fulfilled' 
-            ? fundsResponse.value.data?.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0) || 0 
-            : 0,
-          transactions: transactionsResponse.status === 'fulfilled' ? transactionsResponse.value.count || 0 : 0
-        });
-
-        // Set activities
-        if (activitiesResponse.status === 'fulfilled' && activitiesResponse.value.data) {
-          setActivities(activitiesResponse.value.data);
+        if (!supabase) {
+          throw new Error('Supabase client is not initialized');
         }
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
+        
+        // Fetch users count
+        const { count: usersCount, error: usersError } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true });
+        
+        if (usersError) throw usersError;
+        
+        // Fetch campaigns count
+        const { count: campaignsCount, error: campaignsError } = await supabase
+          .from('campaigns')
+          .select('*', { count: 'exact', head: true });
+        
+        if (campaignsError) throw campaignsError;
+        
+        // Fetch funds total
+        const { data: fundsData, error: fundsError } = await supabase
+          .from('transactions')
+          .select('amount')
+          .eq('status', 'completed');
+        
+        if (fundsError) throw fundsError;
+        
+        // Calculate total funds
+        const totalFunds = fundsData?.reduce((sum, item) => 
+          sum + (parseFloat(item.amount) || 0), 0) || 0;
+        
+        // Fetch transactions count
+        const { count: transactionsCount, error: transactionsError } = await supabase
+          .from('transactions')
+          .select('*', { count: 'exact', head: true });
+        
+        if (transactionsError) throw transactionsError;
+        
+        // Fetch recent activities
+        const { data: activitiesData, error: activitiesError } = await supabase
+          .from('activities')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
+        
+        if (activitiesError) throw activitiesError;
+        
+        // Update state with fetched data
+        setStats({
+          users: usersCount || 0,
+          campaigns: campaignsCount || 0,
+          funds: totalFunds,
+          transactions: transactionsCount || 0
+        });
+        
+        setActivities(activitiesData || []);
+        
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    // Only fetch if supabase client exists
-    if (supabase) {
-      fetchStats();
-    } else {
-      setLoading(false);
-    }
+    fetchStats();
   }, []);
 
   // Content to render inside AdminLayout
@@ -89,6 +118,13 @@ const HomePage = () => {
         <p className="text-gray-600">
           Manage fundraising campaigns, verify users, and monitor platform performance from this central dashboard.
         </p>
+        
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+            <p className="font-medium">Error loading dashboard data:</p>
+            <p>{error}</p>
+          </div>
+        )}
       </motion.div>
 
       {/* Dashboard Cards */}
