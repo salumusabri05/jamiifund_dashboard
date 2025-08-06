@@ -2,8 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiHome, FiUsers, FiFlag, FiEdit, FiBarChart2, FiDollarSign } from 'react-icons/fi';
+import { FiUsers, FiFlag, FiEdit, FiBarChart2, FiDollarSign } from 'react-icons/fi';
 import Link from 'next/link';
+import ProtectedRoute from '../../components/ProtectedRoute';
+import { useAuth } from '../../context/AuthContext';
 import DashboardCards from './components/DashboardCards';
 import RecentActivity from './components/RecentActivity';
 import supabase from '../../lib/supabaseClient';
@@ -16,6 +18,7 @@ import supabase from '../../lib/supabaseClient';
  * Connects to Supabase for data fetching
  */
 const HomePage = () => {
+  const { adminData } = useAuth();
   // State to store data from Supabase
   const [userData, setUserData] = useState({ count: 0 });
   const [revenueData, setRevenueData] = useState({ total: 0 });
@@ -102,89 +105,93 @@ const HomePage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-purple-50">
-      {/* Header */}
-      <motion.header 
-        className="bg-purple-600 text-white p-6"
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="container mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold">JAMIIFUND Dashboard</h1>
-          <p className="mt-2 text-purple-200">Admin Control Panel</p>
-        </div>
-      </motion.header>
-
-      {/* Main Content */}
-      <main className="container mx-auto p-6">
-        {/* Welcome Section */}
-        <motion.div 
-          className="bg-white rounded-lg shadow-md p-6 mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+    <ProtectedRoute>
+      <div className="min-h-screen bg-purple-50">
+        {/* Header */}
+        <motion.header 
+          className="bg-purple-600 text-white p-6"
+          initial={{ y: -100 }}
+          animate={{ y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-2xl font-semibold text-purple-800 mb-2">Welcome to JAMIIFUND Admin Dashboard</h2>
-          <p className="text-gray-600">
-            Manage fundraising campaigns, verify users, and monitor platform performance from this central dashboard.
-            Select any of the modules below to get started.
-          </p>
-        </motion.div>
+          <div className="container mx-auto">
+            <h1 className="text-3xl md:text-4xl font-bold">JAMIIFUND Dashboard</h1>
+            <p className="mt-2 text-purple-200">
+              Welcome back, {adminData?.full_name || 'Admin'}
+            </p>
+          </div>
+        </motion.header>
 
-        {/* Dashboard Modules */}
-        <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          {menuItems.map((item, index) => (
-            <Link href={item.path} key={index}>
-              <motion.div
-                className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer"
-                variants={itemVariants}
-                whileHover={{ 
-                  y: -10, 
-                  boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-                  transition: { duration: 0.2 }
-                }}
-              >
-                <div className="p-6">
-                  <div className={`rounded-full w-16 h-16 flex items-center justify-center mb-4 ${item.color}`}>
-                    {item.icon}
+        {/* Main Content */}
+        <main className="container mx-auto p-6">
+          {/* Welcome Section */}
+          <motion.div 
+            className="bg-white rounded-lg shadow-md p-6 mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-2xl font-semibold text-purple-800 mb-2">Welcome to JAMIIFUND Admin Dashboard</h2>
+            <p className="text-gray-600">
+              Manage fundraising campaigns, verify users, and monitor platform performance from this central dashboard.
+              Select any of the modules below to get started.
+            </p>
+          </motion.div>
+
+          {/* Dashboard Modules */}
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {menuItems.map((item, index) => (
+              <Link href={item.path} key={index}>
+                <motion.div
+                  className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer"
+                  variants={itemVariants}
+                  whileHover={{ 
+                    y: -10, 
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                    transition: { duration: 0.2 }
+                  }}
+                >
+                  <div className="p-6">
+                    <div className={`rounded-full w-16 h-16 flex items-center justify-center mb-4 ${item.color}`}>
+                      {item.icon}
+                    </div>
+                    <h3 className="text-xl font-semibold text-purple-800 mb-2">{item.title}</h3>
+                    <p className="text-gray-600">{item.description}</p>
                   </div>
-                  <h3 className="text-xl font-semibold text-purple-800 mb-2">{item.title}</h3>
-                  <p className="text-gray-600">{item.description}</p>
-                </div>
-                <div className="bg-purple-50 p-4">
-                  <p className="text-purple-600 font-medium flex items-center">
-                    Access Module
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </p>
-                </div>
-              </motion.div>
-            </Link>
-          ))}
-        </motion.div>
+                  <div className="bg-purple-50 p-4">
+                    <p className="text-purple-600 font-medium flex items-center">
+                      Access Module
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </p>
+                  </div>
+                </motion.div>
+              </Link>
+            ))}
+          </motion.div>
 
-        {/* Dashboard Metrics */}
-        <DashboardCards 
-          userData={userData}
-          revenueData={revenueData}
-          investmentsData={investmentsData}
-          loading={loading}
-        />
+          {/* Dashboard Metrics */}
+          <DashboardCards 
+            userData={userData}
+            revenueData={revenueData}
+            investmentsData={investmentsData}
+            loading={loading}
+          />
 
-        {/* Recent User Activity */}
-        <RecentActivity 
-          activities={activityData}
-          loading={loading}
-        />
-      </main>
-    </div>
+          {/* Recent User Activity */}
+          <RecentActivity 
+            activities={activityData}
+            loading={loading}
+          />
+        </main>
+      </div>
+    </ProtectedRoute>
   );
 };
 
