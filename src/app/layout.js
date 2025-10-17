@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "JAMIIFUND Dashboard",
   description: "Admin dashboard for JAMIIFUND fundraising platform",
+  icons: {
+    icon: "/icons/icon.png",
+    shortcut: "/icons/icon.png",
+    apple: "/icons/icon.png"
+  }
 };
 
 export default function RootLayout({ children }) {

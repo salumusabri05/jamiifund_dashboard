@@ -11,7 +11,9 @@ import { useAuth } from '../context/AuthContext';
  * Redirects unauthenticated users to login page
  */
 const ProtectedRoute = ({ children }) => {
-  const { admin, loading } = useAuth();
+  const auth = useAuth();
+  const admin = auth?.admin;
+  const loading = auth?.loading;
   const router = useRouter();
 
   useEffect(() => {

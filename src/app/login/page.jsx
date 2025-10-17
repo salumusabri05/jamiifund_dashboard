@@ -19,7 +19,8 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const router = useRouter();
-  const { login } = useAuth();
+  const auth = useAuth();
+  const login = typeof auth?.login === 'function' ? auth.login : async () => ({ success: false, error: 'Auth context not available' });
 
   const handleLogin = async (e) => {
     e.preventDefault();

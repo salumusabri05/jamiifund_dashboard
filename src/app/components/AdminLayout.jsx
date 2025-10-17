@@ -16,7 +16,9 @@ import ProtectedRoute from '../../components/ProtectedRoute';
  */
 const AdminLayout = ({ children, currentPage }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { admin, signOut } = useAuth();  // Changed from adminData to admin for consistency
+  const auth = useAuth();
+  const admin = auth?.admin || {};
+  const signOut = auth?.signOut;
   
   const menuItems = [
     { icon: <FiHome />, label: 'Dashboard', path: '/Home' },

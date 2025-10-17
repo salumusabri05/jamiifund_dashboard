@@ -20,7 +20,8 @@ import 'react-quill/dist/quill.snow.css'
  * - Draft saving
  */
 const BlogManagementPage = () => {
-  const { admin } = useAuth();
+  const auth = useAuth();
+  const admin = auth?.admin || {};
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);

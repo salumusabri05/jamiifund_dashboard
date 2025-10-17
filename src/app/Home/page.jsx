@@ -17,7 +17,8 @@ import { supabase } from '../../lib/supabaseClient';
  * Connects to Supabase for data fetching
  */
 const HomePage = () => {
-  const { admin } = useAuth();
+  const auth = useAuth();
+  const admin = auth?.admin || {};
   const [stats, setStats] = useState({
     users: 0,
     campaigns: 0,
