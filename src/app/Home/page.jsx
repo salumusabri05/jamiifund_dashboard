@@ -40,7 +40,6 @@ const HomePage = () => {
           throw new Error('Supabase client is not initialized');
         }
         
-        // Fetch users count
         const { count: usersCount, error: usersError } = await supabase
           .from('users')
           .select('*', { count: 'exact', head: true });
@@ -55,15 +54,31 @@ const HomePage = () => {
         if (campaignsError) throw campaignsError;
         
         // Fetch funds total
-        const { data: fundsData, error: fundsError } = await supabase
+        const { data: fundsTotalData, error: fundsTotalError } = await supabase
           .from('transactions')
           .select('amount')
           .eq('status', 'completed');
+        if (fundsTotalError) throw fundsTotalError;
+        // Fetch users
+        const { data: usersData, error: usersDataError } = await supabase
+          .from('users')
+          .select('*');
+        if (usersDataError) throw usersDataError;
+        // Fetch campaigns
+        const { data: campaignsData, error: campaignsDataError } = await supabase
+          .from('campaigns')
+          .select('*');
+        if (campaignsDataError) throw campaignsDataError;
+        // Fetch transactions
+        const { data: transactionsData, error: transactionsDataError } = await supabase
+          .from('transactions')
+          .select('*');
+        if (transactionsDataError) throw transactionsDataError;
         
         if (fundsError) throw fundsError;
         
         // Calculate total funds
-        const totalFunds = fundsData?.reduce((sum, item) => 
+        const totalFunds = fundsTotalData?.reduce((sum, item) => 
           sum + (parseFloat(item.amount) || 0), 0) || 0;
         
         // Fetch transactions count

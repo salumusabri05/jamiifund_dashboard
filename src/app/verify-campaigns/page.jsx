@@ -31,8 +31,7 @@ const VerifyCampaignsPage = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('campaigns')
-        .select('*, user:users(full_name, email)')
-        .eq('status', 'pending')
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
